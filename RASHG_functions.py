@@ -1,7 +1,15 @@
-from instrumental import instrument, u
-from pyvcam import pvc
-from pyvcam.camera import Camera
-import pyvisa
+Machine=False 
+if(Machine):
+    from instrumental import instrument, u
+    from pyvcam import pvc
+    from pyvcam.camera import Camera
+    import pyvisa
+    import nidaqmx
+    from nidaqmx.constants import TerminalConfiguration
+    from instrumental import u
+else:
+    print("RUNNING IN MACHINELESS MODE, data is literally random  or zero")
+
 import numpy as np
 from time import sleep
 from datetime import datetime
@@ -14,9 +22,6 @@ import h5py
 import time
 from scipy.optimize import curve_fit
 from scipy.interpolate import interp1d
-import nidaqmx
-from nidaqmx.constants import TerminalConfiguration
-from instrumental import u
 import pickle
 import matplotlib.pyplot as plt
 import hyperspy.api as hs
@@ -205,12 +210,12 @@ def Shutter(op):
         #tqdm.write("Shutter Closed")
         
         
-def MoveRot(position, Rot=C):
+'''def MoveRot(position, Rot=C):
     """Helper function for instrumental to avoid clutter and make code 
     more readable
     >>>returns null"""
     Rot.move_to(position*u.degree)
-    
+''' #weird bud C is not defined    
 def Sin2(angle,mag,xoffset, yoffset):
     return mag*np.sin(angle*2*np.pi/360 - xoffset)**2 + yoffset
 
