@@ -30,6 +30,9 @@ class grapher(param.Parameterized):
     cPol = param.Number(default=0)
     filename = "testfile2.nc"
     button = pn.widgets.Button(name='Gather Data', button_type='primary')
+    button2 = pn.widgets.Button(name='Live View', button_type='primary')
+    live = True
+    refresh = 5 #refresh every 5 seconds #make it a parameter
     @param.depends('cPol')
     def progressBar(self):
         return pn.Column(self.pbar,self.wbar,self.obar,self.polbar)
@@ -41,7 +44,6 @@ class grapher(param.Parameterized):
         self.polbar = tqdm(desc = "polarization") #polarization
         self.init_vars()
         self.cache = np.random.rand(100,100)
-        print(self.cache)
         if(Machine):
             self.init_instruments()
     def init_vars(self):
@@ -133,6 +135,8 @@ class grapher(param.Parameterized):
         MaiTai.write("SHUT 1")
         print('Shutter opened')
     def gather_data(self, event = None):
+        self.button.disabled = True
+        self.live = False
         print("Gathering Data")
         pit = range(self.pwr.size) #power, polarization, wavelength, orientation respectively
         polit = range(self.pol.size)
@@ -161,28 +165,39 @@ class grapher(param.Parameterized):
                             pos_bot = pos - rbot.offset
                             rtop.move_to(pos_top, wait=False)
                             rbot.move_to(pos_bot, wait=True)
-                            shg[:,:,o,p,pw,w] = cam.get_frame(exp_time=
-                                                                exp_time)
+                            self.cache = cam.get_frame(exp_time=exp_time)
+                            shg[:,:,o,p,pw,w] = self.cache
                         else:
                             self.cache=np.random.rand(self.x.size,self.y.size)
-                            print(self.cache)
                             self.shg[:,:,o,p,pw,w] = self.cache
                         self.polbar.update()
                     self.obar.update()
                 self.pbar.update()
             self.wbar.update()
-            
+    def live_view(self, event = None):
+        print("Initializing live view") 
+        self.button2.disabled = True
+        while self.live:
+            if(Machine):
+                self.cache = cam.get_frame(exp_time=exp_time)
+            else:
+                self.cache = np.zeros((self.x.size,self.y.size))
+            self.cPol = self.cPol + 1
+            sleep(self.refresh)
+            if not live:
+                break
     @param.depends('cPol')
     def graph(self):
         output = self.cache
         print(output)
         self.zdim = hv.Dimension('Intensity', range=(output.min(), output.max()))
         opts = [hv.opts.Image(colorbar=True, cmap=self.colorMap, tools=['hover'], framewise=True, logz=True)]
-        return hv.Image(output, vdims=self.zdim).opts(opts).redim(x=self.xDim, y=self.yDim) 
+        return hv.Image(output, vdims=self.zdim).opts(opts).redim(x=self.xDim, y=self.yDim)
         
     def output(self):
         self.button.on_click(self.gather_data)
-        return pn.Row(self.progressBar,self.button,self.param.colorMap, self.graph)
+        self.button2.on_click(self.live_view)
+        return pn.Row(self.progressBar, pn.Column(self.button,self.button2),self.param.colorMap, self.graph)
 
 graph = grapher()
 graph.output().show()
