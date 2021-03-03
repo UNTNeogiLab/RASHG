@@ -1,4 +1,4 @@
-Machine=False 
+Machine=True
 if(Machine):
     from instrumental import instrument, u
     from pyvcam import pvc
@@ -7,6 +7,7 @@ if(Machine):
     import nidaqmx
     from nidaqmx.constants import TerminalConfiguration
     from instrumental import u
+    import thorlabs_apt as apt
 else:
     print("RUNNING IN MACHINELESS MODE, data is literally random  or zero")
 
@@ -14,7 +15,6 @@ import numpy as np
 from time import sleep
 from datetime import datetime
 import os
-import tifffile
 import glob
 from tqdm import tqdm
 import subprocess
@@ -24,7 +24,7 @@ from scipy.optimize import curve_fit
 from scipy.interpolate import interp1d
 import pickle
 import matplotlib.pyplot as plt
-import hyperspy.api as hs
+#import hyperspy.api as hs
 
 
 def InitializeInstruments():
@@ -35,7 +35,7 @@ def InitializeInstruments():
     Parameters
     ----------
     none
-    
+
     Returns
     -------
     cam : object
@@ -55,31 +55,19 @@ def InitializeInstruments():
         print("Camera open")
     else:
         print("Error: camera not found")
-    try:
-        A = instrument('A')    # try/except is used here to handle
-    except:                    # a bug in instrumental that requires
-        A = instrument('A')    # this line to be run twice
-    print("A.serial = " + A.serial)
-    try:
-        B = instrument('B')
-    except:
-        B = instrument('B')
-    print("B.serial = " + B.serial)
-    try:
-        C = instrument('C')
-    except:
-        C = instrument('C')
-    print("C.serial = " + C.serial)
-    
+    l = apt.list_available_devices()
+    L = [A,B,C] = [apt.Motor(i[1]) for i in l]
+    for i in L:
+        i.set_move_home_parameters(2,1,10,0)
+        i.set_velocity_parameters(0,10,10)
+        i.move_home()
+
     return cam, A, B, C
 
 def CloseInstruments(cam, A, B, C):
     cam.close()
     pvc.uninit_pvcam()
-    A.close()
-    B.close()
-    C.close()
-    
+
 def CheckRotators(A, B, C):
     """
     Verifies physical position of half wave plate rotation mounts and assigns
@@ -88,11 +76,11 @@ def CheckRotators(A, B, C):
     Parameters
     ----------
     A : object
-        Instrumental K10CR1 object.
+        K10CR1 APT object.
     B : object
-        Instrumental K10CR1 object.
+        K10CR1 APT object.
     C : object
-        Instrumental K10CR1 object.
+        K10CR1 APT object.
 
     Returns
     -------
@@ -108,7 +96,7 @@ def CheckRotators(A, B, C):
     while response != 'y':
         response = input("Are the rotator locations unchanged? Enter " +
                          "'y' to continue, 'n' to manually set rotator_top " +
-                         "and rotator_bottom\n" + 
+                         "and rotator_bottom\n" +
                          '>>>')
         rotator_top = input("Enter name (A, B, or C) of post-sample half-wave"
                             + " rotator:\n" +
@@ -145,15 +133,15 @@ def CheckRotators(A, B, C):
             pass
     return rotator_top, rotator_bottom, cp_post
 
-def Power(): 
+def Power():
     """Reads power from Gentec TPM300 via VISA commands
     The while loop avoids outputting invalid token
     >>>returns float
-    
+
     to-do: incorporate different power ranges (itteratively check all avaliable
     ranges and chose the best fit. Log this choice)"""
-    
-    
+
+
     while True:
         try:
             Pread = Pmeter.query("*READPOWER:")
@@ -161,18 +149,18 @@ def Power():
             return Power
         except:
              continue
-                
+
 def PD():
     with nidaqmx.Task() as task:
         ai_channel = task.ai_channels.add_ai_voltage_chan("Dev1/ai0",terminal_config = TerminalConfiguration.RSE)
         r = task.read(number_of_samples_per_channel=100)
         m = np.mean(r)
         delta = np.std(r)
-        return m, delta   
-    
+        return m, delta
+
 #begun 7/8/2020. Finish later.
 #class MaiTai:
-#    """Class for controlling the MaiTai Ti:Sapphire tunable pulsed 
+#    """Class for controlling the MaiTai Ti:Sapphire tunable pulsed
 #laser."""
 #    def __init__(self, rm):
 #        """Sets the serial address for the instrument. Will need to be
@@ -180,42 +168,42 @@ def PD():
 #        """
 #        self.address = 'ASRL3::INSTR'
 #        self = rm.open_resource(self.address)
-#        
-    def Shutter(x):
-        if x == 1:
-            MaiT
-        
+#
+#    def Shutter(x):
+#        if x == 1:
+#            MaiT
+
 def MoveWav(position):
-    """Helper function for instrumental to avoid clutter and make code 
+    """Helper function for instrumental to avoid clutter and make code
     more readable
     >>>returns null"""
     MaiTai.write(f"WAV {position}")
-    
+
 def ReadWav():
-    """Helper function for instrumental to avoid clutter and make code 
+    """Helper function for instrumental to avoid clutter and make code
     more readable
     >>>returns int"""
     w = int(MaiTai.query("WAV?").split('n')[0])
     return w
-    
+
 def Shutter(op):
-    """Helper function for instrumental to avoid clutter and make code 
+    """Helper function for instrumental to avoid clutter and make code
     more readable
-    >>>returns string""" 
+    >>>returns string"""
     if op == 1:
         MaiTai.write("SHUT 1")
         #tqdm.write("Shutter Opened")
     else:
         MaiTai.write("SHUT 0")
         #tqdm.write("Shutter Closed")
-        
-        
+
+
 '''def MoveRot(position, Rot=C):
-    """Helper function for instrumental to avoid clutter and make code 
+    """Helper function for instrumental to avoid clutter and make code
     more readable
     >>>returns null"""
     Rot.move_to(position*u.degree)
-''' #weird bud C is not defined    
+''' #weird bud C is not defined
 def Sin2(angle,mag,xoffset, yoffset):
     return mag*np.sin(angle*2*np.pi/360 - xoffset)**2 + yoffset
 
@@ -234,7 +222,7 @@ def PCFit(file):
     Angles = []
     xx = np.arange(2,21,1)
     XX = np.linspace(0,30,100)
-    
+
     for i in range(0,len(pc),1):
         params, cov = PowerFit(pc[i,1][0],pc[i,1][1])
         PC.append(params)
@@ -248,16 +236,16 @@ def PCFit(file):
     PCcov = np.asarray(PCcov)
     #Angles = np.asarray(Angles)
     WavPowAng = dict(zip(wavelengths,Angles))
-    
+
     return PC, PCcov, WavPowAng, pc
 
 def V2P(wavelength,voltage,pc):
-    
+
     def Line(x,m,b):
         return m * x + b
 
     def FitV2P(x,y):
-    
+
         fit, fitcov = curve_fit(Line, x, y)
         return fit, fitcov
 
