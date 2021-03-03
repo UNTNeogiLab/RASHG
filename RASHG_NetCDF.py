@@ -43,13 +43,16 @@ x2 = 1350
 y1 = 485
 y2 = 985
 cam.roi = (x1, x2, y1, y2) #x1, x2, y1, y2
-# cam.binning = (2,2)
-
+xbin = 2
+ybin = 2
+cam.binning = (xbin, ybin)
+if xbin != ybin:
+    print('X-bin and Y-bin must be equal, probably')
 #set coordinate dimension sizes and additional
 #params here
 escape_delay = 0
-x = x2 - x1
-y = y2 - y1
+x = (x2 - x1)/xbin
+y = (y2 - y1)/ybin
 polarization = 180
 pow_start = 20
 pow_stop = 25
