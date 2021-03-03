@@ -25,10 +25,10 @@ import matplotlib.pyplot as plt
 import RASHG_functions as RASHG
 
 #initialize instruments; in current geometry (7/8/2020), A is #bottom, B is top, C is the attenuator
-cam, A, B, C = RASHG.InitializeInstruments()
+cam, A, B = RASHG.InitializeInstruments()
 rbot = A
 rtop = B
-atten = C
+# atten = C
 rm = pyvisa.ResourceManager()
 #Pmeter = rm.open_resource('ASRL3::INSTR')
 #MaiTai = rm.open_resource('ASRL1::INSTR')
@@ -37,14 +37,13 @@ rm = pyvisa.ResourceManager()
 rbot.move_home()
 rtop.move_home()
 print('Homing stages')
-atten.move_home()
-x1 = 0
-x2 = 100
-y1 = 0
-y2 = 100
+# atten.move_home()
+x1 = 650
+x2 = 1350
+y1 = 485
+y2 = 985
 cam.roi = (x1, x2, y1, y2) #x1, x2, y1, y2
-
-    #literally make things up
+# cam.binning = (2,2)
 
 #set coordinate dimension sizes and additional
 #params here

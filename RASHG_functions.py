@@ -56,13 +56,13 @@ def InitializeInstruments():
     else:
         print("Error: camera not found")
     l = apt.list_available_devices()
-    L = [A,B,C] = [apt.Motor(i[1]) for i in l]
+    L = [A,B] = [apt.Motor(i[1]) for i in l]
     for i in L:
         i.set_move_home_parameters(2,1,10,0)
         i.set_velocity_parameters(0,10,10)
         i.move_home()
 
-    return cam, A, B, C
+    return cam, A, B
 
 def CloseInstruments(cam, A, B, C):
     cam.close()
