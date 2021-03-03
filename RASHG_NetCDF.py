@@ -60,7 +60,7 @@ wavstart = 780
 wavend = 782
 wavstep = 2
 wavwait = 5 #value is in seconds
-exp_time = 1000
+exp_time = 10000
 
 #initialize the data repository
 with netCDF4.Dataset('NeogiLab_data.nc', 'w') as data:
