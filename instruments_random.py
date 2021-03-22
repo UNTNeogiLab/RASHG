@@ -1,5 +1,6 @@
+from instruments_base import instruments as instruments_base
 import numpy as np
-class instruments():
+class instruments(instruments_base):
     def __init__(self,x1,x2,y1,y2):
         self.x = x2 - x1
         self.y = y2 - y1
@@ -8,7 +9,3 @@ class instruments():
         return np.random.rand(self.x,self.y)
     def live(self):
         return np.zeros(self.x,self.y)
-    def power_step(self):
-        pass
-    def wav_step(self):
-        pass
