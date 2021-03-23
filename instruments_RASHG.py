@@ -10,12 +10,12 @@ import time
 import param
 
 class instruments(instruments_base):
-    x1 = param.Number(default=0)
-    x2 = param.Number(default=100)
-    y1 = param.Number(default=0)
-    y2 = param.Number(default=100)
+    x1 = param.Integer(default=0,bounds=(0,2047))
+    x2 = param.Integer(default=100,bounds=(0,2047))
+    y1 = param.Integer(default=0,bounds=(0,2047))
+    y2 = param.Integer(default=100,bounds=(0,2047))
     exp_time = param.Number(default=10000)
-    escape_delay = param.Number(default=0)
+    escape_delay = param.Integer(default=120) #should beep at 45
     wavwait = param.Number(default=5)
 
     def __init__(self, x1, x2, y1, y2):

@@ -13,7 +13,7 @@ hv.extension('bokeh', 'plotly')
 class grapher(param.Parameterized):
     colorMap = param.ObjectSelector(default="fire", objects=hv.plotting.util.list_cmaps())
     cPol = param.Integer(default=0, precedence=-1)
-    polarization = param.Integer(default=180)
+    polarization = param.Number(default=180,bounds=(0,360))
     pow_start = param.Integer(default=0)
     pow_stop = param.Integer(default=5)
     pow_step = param.Integer(default=5)
