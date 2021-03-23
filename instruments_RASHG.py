@@ -1,29 +1,37 @@
-from instruments_base import instruments as instruments_base
+from .instruments_base import instruments_base
 # from instrumental import instrument, u
 # from pyvcam import pvc
 # from pyvcam.camera import Camera
 import pyvisa
 import nidaqmx
 from nidaqmx.constants import TerminalConfiguration
-import RASHG_functions as RASHG
+from . import RASHG_functions as RASHG
 import time
-
+import param
 
 class instruments(instruments_base):
-    exp_time = 10000
-    escape_delay = 0
-    wavwait = 5
+    x1 = param.Number(default=0)
+    x2 = param.Number(default=100)
+    y1 = param.Number(default=0)
+    y2 = param.Number(default=100)
+    exp_time = param.Number(default=10000)
+    escape_delay = param.Number(default=0)
+    wavwait = param.Number(default=5)
 
     def __init__(self, x1, x2, y1, y2):
         super.__init__()
 
     def initialize(self):
+        params = ["x1", "x2", "y1", "y2","exp_time","escape_delay","wavwait"] #list of parameters to lock
+        for param in params:
+            self.param[param].constant = True
+        self.initialized = True
         self.cam, self.rbot, self.rtop, self.atten = RASHG.InitializeInstruments()
         self.rbot.move_home()
         self.rtop.move_home()
         print('Homing stages')
         self.atten.move_home()
-        self.cam.roi = (x1, x2, y1, y2)
+        self.cam.roi = (self.x1, self.x2, self.y1, self.y2)
 
     def get_frame(self, o, p):
         if o == 1:
@@ -42,3 +50,6 @@ class instruments(instruments_base):
 
     def wav_step(self):
         time.sleep(self.wavwait)
+
+    def widgets(self):
+        return self.param

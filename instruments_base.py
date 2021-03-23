@@ -1,7 +1,8 @@
 import param
 
 
-class instruments(param.Parameterized):
+class instruments_base(param.Parameterized):
+    initialized = param.Boolean(default=False,precedence=-1) #dummy variable to make code work
     def __init__(self):
         super().__init__()
 
@@ -21,4 +22,4 @@ class instruments(param.Parameterized):
         pass
 
     def widgets(self):
-        pass
+        return self.param

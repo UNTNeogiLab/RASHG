@@ -1,4 +1,3 @@
-Machine = False
 from time import sleep
 import holoviews as hv
 import netCDF4
@@ -9,19 +8,23 @@ from tqdm.notebook import tqdm
 
 pn.extension('plotly')
 hv.extension('bokeh', 'plotly')
-if (Machine):
-    from instruments_RASHG import instruments
-else:
-    from instruments_random import instruments
 
 
 class grapher(param.Parameterized):
     colorMap = param.ObjectSelector(default="fire", objects=hv.plotting.util.list_cmaps())
-    cPol = param.Number(default=0)
-    filename = "testfile2.nc"
+    cPol = param.Integer(default=0, precedence=-1)
+    polarization = param.Integer(default=180)
+    pow_start = param.Integer(default=0)
+    pow_stop = param.Integer(default=5)
+    pow_step = param.Integer(default=5)
+    wavstart = param.Integer(default=780)
+    wavend = param.Integer(default=800)
+    wavstep = param.Integer(default=2)
+    wavwait = param.Number(default=5)  # value is in seconds
+    filename = param.String(default="data/testfile2.nc")
     button = pn.widgets.Button(name='Gather Data', button_type='primary')
-    button2 = pn.widgets.Button(name='Live View', button_type='primary')
-    live = True
+    button2 = pn.widgets.Button(name='refresh', button_type='primary')
+    live = param.Boolean(default=True, precedence=-1)
     refresh = 5  # refresh every 5 seconds #make it a parameter
 
     @param.depends('cPol')
@@ -34,32 +37,31 @@ class grapher(param.Parameterized):
         self.wbar = tqdm(desc="wavelength")  # wavelength
         self.obar = tqdm(desc="orientation")  # orientation
         self.polbar = tqdm(desc="polarization")  # polarization
-        self.init_vars()
         self.cache = np.random.rand(100, 100)
-        self.instruments = instruments(self.x1, self.x2, self.y1, self.y2)
-
+        self.button.disabled = True
+        self.button2.disabled = True
+    def initialize(self, instruments):
+        self.instruments = instruments
+        self.x1, self.x2, self.y1, self.y2 = self.instruments.x1, self.instruments.x2, self.instruments.y1, self.instruments.y2
+        self.init_vars()
+        self.button.disabled = False
+        self.button2.disabled=False
+        self.button.on_click(self.gather_data)
+        self.button2.on_click(self.refresh)
+        params=["polarization","pow_start","pow_stop","pow_step","wavstart","wavend","wavstep","wavwait","filename"]
+        for param in params:
+            self.param[param].constant=True
     def init_vars(self):
-        self.x1 = 0
-        self.x2 = 100
-        self.y1 = 0
-        self.y2 = 100  # todo make GUI
         x = self.x2 - self.x1
         y = self.y2 - self.y1
-        polarization = 180
-        pow_start = 0
-        pow_stop = 5
-        pow_step = 5
-        power = (pow_stop - pow_start) / (pow_step)
-        wavstart = 780
-        wavend = 800
-        wavstep = 2
-        self.wavwait = 5  # value is in seconds
+        power = (self.pow_stop - self.pow_start) / (self.pow_step)
+
         self.data = netCDF4.Dataset(self.filename, 'w')
         x = self.data.createDimension('x', x)
         y = self.data.createDimension('y', y)
-        pol = self.data.createDimension('pol', polarization)
+        pol = self.data.createDimension('pol', self.polarization)
         pwr = self.data.createDimension('pwr', power)
-        wav = self.data.createDimension('wav', (wavend - wavstart) / wavstep)
+        wav = self.data.createDimension('wav', (self.wavend - self.wavstart) / self.wavstep)
         ori = self.data.createDimension('ori', 2)
 
         # populate metadata
@@ -93,12 +95,13 @@ class grapher(param.Parameterized):
         self.y[:] = np.arange(self.y.size, dtype=np.uint16)
         self.ori[:] = np.arange(self.ori.size, dtype=np.uint16)
         self.pol[:] = np.arange(self.pol.size, dtype=np.uint16)
-        self.pwr[:] = np.arange(pow_start, pow_stop, pow_step, dtype=np.uint16)
-        self.wav[:] = np.arange(wavstart, wavend, wavstep, dtype=np.uint16)
+        self.pwr[:] = np.arange(self.pow_start, self.pow_stop, self.pow_step, dtype=np.uint16)
+        self.wav[:] = np.arange(self.wavstart, self.wavend, self.wavstep, dtype=np.uint16)
         self.cache = np.random.rand(x.size, y.size)
 
     def gather_data(self, event=None):
         self.button.disabled = True
+        self.button2.disabled = True
         self.live = False
         print("Gathering Data")
         pit = range(self.pwr.size)  # power, polarization, wavelength, orientation respectively
@@ -115,37 +118,32 @@ class grapher(param.Parameterized):
                 for o in oit:
                     self.polbar.reset(total=len(polit))
                     for p in polit:
-                        self.cPol = p
-                        self.shg[:, :, o, p, pw, w] = self.instruments.get_frame(o, p)
+                        self.cache = self.instruments.get_frame(o, p)
+                        self.shg[:, :, o, p, pw, w] = self.cache
                         self.polbar.update()
+                        self.cPol = p
                     self.obar.update()
                 self.pbar.update()
             self.wbar.update()
-
+        self.button.disabled = False
+        self.button2.disabled = False
     def live_view(self, event=None):
+        self.button.disabled=True
         print("Initializing live view")
-        self.button2.disabled = True
-        while self.live:
-            self.cache = self.instruments.live()
-            self.cPol = self.cPol + 1
-            sleep(self.refresh)
-            if not self.live:
-                break
+        self.cache = self.instruments.live()
+        self.cPol = self.cPol + 1
+        self.button.disabled = False
 
     @param.depends('cPol')
     def graph(self):
         output = self.cache
-        print(output)
         self.zdim = hv.Dimension('Intensity', range=(output.min(), output.max()))
         opts = [hv.opts.Image(colorbar=True, cmap=self.colorMap, tools=['hover'], framewise=True, logz=True)]
         return hv.Image(output, vdims=self.zdim).opts(opts).redim(x=self.xDim, y=self.yDim)
 
+    def widgets(self):
+        return pn.Column(self.button,self.button2)
+
     def output(self):
-        self.button.on_click(self.gather_data)
-        self.button2.on_click(self.live_view)
-        return pn.Row(self.progressBar, pn.Column(self.button, self.button2), self.param.colorMap, self.graph)
 
-
-if __name__ == '__main__':  # only run if run directly
-    graph = grapher()
-    graph.output().show()
+        return pn.Row(self.progressBar, self.graph)
