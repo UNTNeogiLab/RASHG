@@ -1,12 +1,13 @@
 from instruments_base import instruments as instruments_base
-#from instrumental import instrument, u
-#from pyvcam import pvc
-#from pyvcam.camera import Camera
+# from instrumental import instrument, u
+# from pyvcam import pvc
+# from pyvcam.camera import Camera
 import pyvisa
 import nidaqmx
 from nidaqmx.constants import TerminalConfiguration
 import RASHG_functions as RASHG
 import time
+
 
 class instruments(instruments_base):
     exp_time = 10000
@@ -14,8 +15,10 @@ class instruments(instruments_base):
     wavwait = 5
 
     def __init__(self, x1, x2, y1, y2):
+        super.__init__()
+
+    def initialize(self):
         self.cam, self.rbot, self.rtop, self.atten = RASHG.InitializeInstruments()
-        self.rm = pyvisa.ResourceManager()
         self.rbot.move_home()
         self.rtop.move_home()
         print('Homing stages')
@@ -36,9 +39,6 @@ class instruments(instruments_base):
 
     def live(self):
         return self.cam.get_frame(exp_time=self.exp_time)
-
-    def power_step(self):
-        pass
 
     def wav_step(self):
         time.sleep(self.wavwait)
