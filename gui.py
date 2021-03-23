@@ -47,7 +47,7 @@ class grapher(param.Parameterized):
         self.button.disabled = False
         self.button2.disabled=False
         self.button.on_click(self.gather_data)
-        self.button2.on_click(self.refresh)
+        self.button2.on_click(self.live_view)
         params=["polarization","pow_start","pow_stop","pow_step","wavstart","wavend","wavstep","wavwait","filename"]
         for param in params:
             self.param[param].constant=True
