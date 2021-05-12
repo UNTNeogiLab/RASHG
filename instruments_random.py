@@ -2,6 +2,7 @@ from .instruments_base import instruments_base
 import numpy as np
 import param
 import panel as pn
+from numba import njit
 
 pn.extension()
 
@@ -22,10 +23,11 @@ class instruments(instruments_base):
         params = ["x1", "x2", "y1", "y2"]
         for param in params:
             self.param[param].constant = True
-
+    @njit(cache=True)
     def get_frame(self, o, p):
         return np.random.rand(self.x, self.y)
 
+    @njit(cache=True)
     def live(self):
         return np.zeros((self.x, self.y))
 

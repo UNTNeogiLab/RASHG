@@ -13,7 +13,7 @@ hv.extension('bokeh', 'plotly')
 class grapher(param.Parameterized):
     colorMap = param.ObjectSelector(default="fire", objects=hv.plotting.util.list_cmaps())
     cPol = param.Integer(default=0, precedence=-1)
-    polarization = param.Number(default=180,bounds=(0,360))
+    polarization = param.Number(default=180, bounds=(0, 360))
     pow_start = param.Integer(default=0)
     pow_stop = param.Integer(default=5)
     pow_step = param.Integer(default=5)
@@ -40,17 +40,20 @@ class grapher(param.Parameterized):
         self.cache = np.random.rand(100, 100)
         self.button.disabled = True
         self.button2.disabled = True
+
     def initialize(self, instruments):
         self.instruments = instruments
         self.x1, self.x2, self.y1, self.y2 = self.instruments.x1, self.instruments.x2, self.instruments.y1, self.instruments.y2
         self.init_vars()
         self.button.disabled = False
-        self.button2.disabled=False
+        self.button2.disabled = False
         self.button.on_click(self.gather_data)
         self.button2.on_click(self.live_view)
-        params=["polarization","pow_start","pow_stop","pow_step","wavstart","wavend","wavstep","wavwait","filename"]
+        params = ["polarization", "pow_start", "pow_stop", "pow_step", "wavstart", "wavend", "wavstep", "wavwait",
+                  "filename"]
         for param in params:
-            self.param[param].constant=True
+            self.param[param].constant = True
+
     def init_vars(self):
         x = self.x2 - self.x1
         y = self.y2 - self.y1
@@ -127,8 +130,9 @@ class grapher(param.Parameterized):
             self.wbar.update()
         self.button.disabled = False
         self.button2.disabled = False
+
     def live_view(self, event=None):
-        self.button.disabled=True
+        self.button.disabled = True
         print("Initializing live view")
         self.cache = self.instruments.live()
         self.cPol = self.cPol + 1
@@ -142,7 +146,7 @@ class grapher(param.Parameterized):
         return hv.Image(output, vdims=self.zdim).opts(opts).redim(x=self.xDim, y=self.yDim)
 
     def widgets(self):
-        return pn.Column(self.button,self.button2)
+        return pn.Column(self.button, self.button2)
 
     def output(self):
 
