@@ -5,8 +5,12 @@ import panel as pn
 from numba import njit
 
 pn.extension()
-
-
+@njit(cache=True)
+def zeros(x,y):
+    return np.zeros((x,y))
+@njit(cache=True)
+def random(x,y):
+    return np.random.rand(x,y)
 class instruments(instruments_base):
     x1 = param.Number(default=0)
     x2 = param.Number(default=100)
@@ -23,13 +27,13 @@ class instruments(instruments_base):
         params = ["x1", "x2", "y1", "y2"]
         for param in params:
             self.param[param].constant = True
-    @njit(cache=True)
-    def get_frame(self, o, p):
-        return np.random.rand(self.x, self.y)
 
-    @njit(cache=True)
+    def get_frame(self, o, p):
+        return random(self.x, self.y)
+
+
     def live(self):
-        return np.zeros((self.x, self.y))
+        return zeros(self.x, self.y)
 
     def widgets(self):
         return self.param
