@@ -4,7 +4,6 @@ Created on Mon Jun 22 10:58:25 2020
 
 @author: Mai Tai
 """
-
 def HSLoad(filename,wavstart, wavend, wavres):
     import numpy as np
     import matplotlib 
