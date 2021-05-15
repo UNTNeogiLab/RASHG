@@ -29,14 +29,13 @@ class grapher(param.Parameterized):
 
     @param.depends('cPol')
     def progressBar(self):
-        return pn.Column(self.pbar, self.wbar, self.obar, self.polbar)
+        return pn.Column(self.pbar, self.wbar, self.obar)
 
     def __init__(self):
         super().__init__()
         self.pbar = tqdm(desc="power")  # power
         self.wbar = tqdm(desc="wavelength")  # wavelength
         self.obar = tqdm(desc="orientation")  # orientation
-        self.polbar = tqdm(desc="polarization")  # polarization
         self.cache = np.random.rand(100, 100)
         self.button.disabled = True
         self.button2.disabled = True
@@ -119,12 +118,10 @@ class grapher(param.Parameterized):
                 self.instruments.power_step()
                 self.obar.reset(total=len(oit))
                 for o in oit:
-                    self.polbar.reset(total=len(polit))
                     for p in polit:
                         self.cache = self.instruments.get_frame(o, p)
                         self.shg[:, :, o, p, pw, w] = self.cache
-                        self.polbar.update()
-                        self.cPol = p
+                    self.cPol = o
                     self.obar.update()
                 self.pbar.update()
             self.wbar.update()
