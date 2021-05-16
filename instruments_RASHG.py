@@ -1,10 +1,4 @@
 from .instruments_base import instruments_base
-# from instrumental import instrument, u
-# from pyvcam import pvc
-# from pyvcam.camera import Camera
-import pyvisa
-import nidaqmx
-from nidaqmx.constants import TerminalConfiguration
 from . import RASHG_functions as RASHG
 import time
 import param
@@ -18,7 +12,7 @@ class instruments(instruments_base):
     escape_delay = param.Integer(default=120) #should beep at 45
     wavwait = param.Number(default=5)
 
-    def __init__(self, x1, x2, y1, y2):
+    def __init__(self):
         super.__init__()
 
     def initialize(self):

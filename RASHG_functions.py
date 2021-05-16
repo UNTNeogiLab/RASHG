@@ -1,24 +1,11 @@
-from instrumental import instrument, u
 from pyvcam import pvc
 from pyvcam.camera import Camera
-import pyvisa
 import nidaqmx
 from nidaqmx.constants import TerminalConfiguration
-import thorlabs_apt as apt
-
+import thorpy as apt
 import numpy as np
-from time import sleep
-from datetime import datetime
-import os
-import glob
-from tqdm import tqdm
-import subprocess
-import h5py
-import time
 from scipy.optimize import curve_fit
 from scipy.interpolate import interp1d
-import pickle
-import matplotlib.pyplot as plt
 
 
 # import hyperspy.api as hs
