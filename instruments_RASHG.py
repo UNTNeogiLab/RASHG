@@ -13,7 +13,7 @@ class instruments(instruments_base):
     wavwait = param.Number(default=5)
 
     def __init__(self):
-        super.__init__()
+        super().__init__()
 
     def initialize(self):
         params = ["x1", "x2", "y1", "y2","exp_time","escape_delay","wavwait"] #list of parameters to lock
