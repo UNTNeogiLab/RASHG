@@ -145,10 +145,10 @@ class gui(param.Parameterized):
                 if self.GUIupdate:
                     self.pbar.update()
             if First:
-                self.data.to_zarr(self.filename, encoding={"ds1": {"compressor": compressor}})
+                self.data.to_zarr(self.filename, encoding={"ds1": {"compressor": compressor}},consolidated=True)
                 First = False
             else:
-                self.data.to_zarr(self.filename, append_dim="wavelength", encoding={"ds1": {"compressor": compressor}})
+                self.data.to_zarr(self.filename, append_dim="wavelength", encoding={"ds1": {"compressor": compressor}},consolidated=True)
             if self.GUIupdate:
                 self.wbar.update()
         print("Finished")
