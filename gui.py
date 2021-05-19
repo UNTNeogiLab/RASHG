@@ -94,7 +94,7 @@ class gui(param.Parameterized):
         self.cache = np.random.rand(x, y)
         self.zeros = np.zeros(
             (1, self.pwr.size, self.Orientation.size, self.Polarization.size, self.x.size, self.y.size))
-        if (os.is_dir(self.filename)):
+        if os.path.isdir(self.filename):
             print("Zarr store exists, exiting")
             quit()
         else:
