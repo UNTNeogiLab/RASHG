@@ -6,8 +6,11 @@ import panel as pn
 import param
 from tqdm.notebook import tqdm
 import os
+import zarr
+
 pn.extension('plotly')
 hv.extension('bokeh', 'plotly')
+compressor = zarr.Blosc(cname="zstd", clevel=3, shuffle=2)
 
 
 class gui(param.Parameterized):
@@ -83,14 +86,20 @@ class gui(param.Parameterized):
         self.x_mm = np.arange(x, dtype=np.uint16) * 0.05338
         self.y = np.arange(y, dtype=np.uint16)
         self.y_mm = np.arange(y, dtype=np.uint16) * 0.05338
-        self.Orientation = np.arange(0,2)
+        self.Orientation = np.arange(0, 2)
         self.Polarization = np.arange(0, 360, self.pol_step, dtype=np.uint16)
         self.Polarization_radians = np.arange(0, 360, self.pol_step, dtype=np.uint16) * math.pi / 180
         self.pwr = np.arange(self.pow_start, self.pow_stop, self.pow_step, dtype=np.uint16)
         self.wavelength = np.arange(self.wavstart, self.wavend, self.wavstep, dtype=np.uint16)
         self.cache = np.random.rand(x, y)
-        self.zeros = np.zeros((1, self.pwr.size, self.Orientation.size, self.Polarization.size, self.x.size, self.y.size))
-        os.mkdir(self.filename)
+        self.zeros = np.zeros(
+            (1, self.pwr.size, self.Orientation.size, self.Polarization.size, self.x.size, self.y.size))
+        if (os.is_dir(self.filename)):
+            print("Zarr store exists, exiting")
+            quit()
+        else:
+            os.mkdir(self.filename)
+
     def gather_data(self, event=None):
         self.button.disabled = True
         self.button2.disabled = True
@@ -100,7 +109,7 @@ class gui(param.Parameterized):
         wit = self.wavelength
         self.wbar.reset(total=len(wit))
         oit = self.Orientation
-        First=True
+        First = True
         print("Gathering Data")
         for w in wit:
             coords = {
@@ -129,17 +138,17 @@ class gui(param.Parameterized):
                     for p in polit:
                         self.cache = self.instruments.get_frame(o, p)
                         mask = {"wavelength": w, "power": pw, "Polarization": p, "Orientation": o}
-                        self.data["ds1"].loc[mask] = xr.DataArray(self.cache,dims=["x_pxls","y_pxls"])
+                        self.data["ds1"].loc[mask] = xr.DataArray(self.cache, dims=["x_pxls", "y_pxls"])
                     if self.GUIupdate:
                         self.cPol = o
                         self.obar.update()
                 if self.GUIupdate:
                     self.pbar.update()
             if First:
-                self.data.to_zarr(self.filename)
-                First=False
+                self.data.to_zarr(self.filename, encoding={"ds1": {"compressor": compressor}})
+                First = False
             else:
-                self.data.to_zarr(self.filename,append_dim="wavelength")
+                self.data.to_zarr(self.filename, append_dim="wavelength", encoding={"ds1": {"compressor": compressor}})
             if self.GUIupdate:
                 self.wbar.update()
         print("Finished")
