@@ -127,7 +127,7 @@ class gui(param.Parameterized):
             self.instruments.wav_step()
             self.pbar.reset(total=len(pit))
             self.data = xr.Dataset(
-                data_vars={"ds1": (dims, self.zeros)},
+                data_vars={"ds1": (dims, self.zeros, self.attrs)},
                 coords=coords,
                 attrs=self.attrs
             )
