@@ -61,10 +61,10 @@ class gui(param.Parameterized):
         self.data = netCDF4.Dataset(self.filename, 'w')
         x = self.data.createDimension('x', x)
         y = self.data.createDimension('y', y)
-        pol = self.data.createDimension('pol', self.polarization)
+        pol = self.data.createDimension('Polarization', self.Polarization)
         pwr = self.data.createDimension('pwr', power)
-        wav = self.data.createDimension('wav', (self.wavend - self.wavstart) / self.wavstep)
-        ori = self.data.createDimension('ori', 2)
+        wav = self.data.createDimension('wavelength', (self.wavend - self.wavstart) / self.wavstep)
+        ori = self.data.createDimension('Orientation', 2)
 
         # populate metadata
         self.data.title = 'Power/Wavelength dependent RASHG'
@@ -76,20 +76,20 @@ class gui(param.Parameterized):
         # which is the shg intensity along the specified dimensions
         self.x = self.data.createVariable('x', np.uint16, ('x',), zlib=True)
         self.y = self.data.createVariable('y', np.uint16, ('y',), zlib=True)
-        self.pol = self.data.createVariable('pol', np.uint16, ('pol',), zlib=True)
+        self.pol = self.data.createVariable('pol', np.uint16, ('Polarization',), zlib=True)
         self.pol.longname = 'Polarization Angle'
         self.pol.units = 'degree'
-        self.ori = self.data.createVariable('ori', np.uint16, ('ori',), zlib=True)
+        self.ori = self.data.createVariable('ori', np.uint16, ('Orientation',), zlib=True)
         self.ori.longname = 'Output Polarization Orientation'
         self.ori.notes = '0 corresponds to parallel, 1 to perpendicular'
         self.pwr = self.data.createVariable('pwr', np.uint16, ('pwr',), zlib=True)
         self.pwr.longname = 'Laser Power'
         self.pwr.units = 'milliwatt'
-        self.wav = self.data.createVariable('wav', np.uint16, ('wav',), zlib=True)
+        self.wav = self.data.createVariable('wav', np.uint16, ('wavelength',), zlib=True)
         self.wav.longname = 'Laser Wavelength'
         self.wav.units = 'nanometer'
         self.shg = self.data.createVariable('shg', np.uint16,
-                                            ('x', 'y', 'ori', 'pol', 'pwr', 'wav'))
+                                            ('x', 'y', 'Orientation', 'Polarization', 'pwr', 'wavelength'))
         self.xDim = hv.Dimension('x', unit="micrometers")
         self.yDim = hv.Dimension('y', unit="micrometers")
         # populate coordinate dimensions
