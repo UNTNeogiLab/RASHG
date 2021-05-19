@@ -1,19 +1,19 @@
-from time import sleep
+import math
 import holoviews as hv
-import netCDF4
+import xarray as xr
 import numpy as np
 import panel as pn
 import param
 from tqdm.notebook import tqdm
-
+import os
 pn.extension('plotly')
 hv.extension('bokeh', 'plotly')
 
 
 class gui(param.Parameterized):
     colorMap = param.ObjectSelector(default="fire", objects=hv.plotting.util.list_cmaps())
-    cPol = param.Integer(default=0, precedence=-1)
-    polarization = param.Number(default=180, bounds=(0, 360))
+    cPol = param.Number(default=0, precedence=-1)
+    pol_step = param.Number(default=2, bounds=(1, 2))  # TODO: figure out how this works
     pow_start = param.Integer(default=0)
     pow_stop = param.Integer(default=5)
     pow_step = param.Integer(default=5)
@@ -21,7 +21,8 @@ class gui(param.Parameterized):
     wavend = param.Integer(default=800)
     wavstep = param.Integer(default=2)
     wavwait = param.Number(default=5)  # value is in seconds
-    filename = param.String(default="data/testfile2.nc")
+    filename = param.String(default="data/testfolder.zarr")
+    GUIupdate = param.Boolean(default=True)
     button = pn.widgets.Button(name='Gather Data', button_type='primary')
     button2 = pn.widgets.Button(name='refresh', button_type='primary')
     live = param.Boolean(default=True, precedence=-1)
@@ -48,7 +49,7 @@ class gui(param.Parameterized):
         self.button2.disabled = False
         self.button.on_click(self.gather_data)
         self.button2.on_click(self.live_view)
-        params = ["polarization", "pow_start", "pow_stop", "pow_step", "wavstart", "wavend", "wavstep", "wavwait",
+        params = ["pol_step", "pow_start", "pow_stop", "pow_step", "wavstart", "wavend", "wavstep", "wavwait",
                   "filename"]
         for param in params:
             self.param[param].constant = True
@@ -57,76 +58,94 @@ class gui(param.Parameterized):
         x = self.x2 - self.x1
         y = self.y2 - self.y1
         power = (self.pow_stop - self.pow_start) / (self.pow_step)
-
-        self.data = netCDF4.Dataset(self.filename, 'w')
-        x = self.data.createDimension('x', x)
-        y = self.data.createDimension('y', y)
-        pol = self.data.createDimension('Polarization', self.Polarization)
-        pwr = self.data.createDimension('pwr', power)
-        wav = self.data.createDimension('wavelength', (self.wavend - self.wavstart) / self.wavstep)
-        ori = self.data.createDimension('Orientation', 2)
-
+        Polarization = 360 / self.pol_step
         # populate metadata
-        self.data.title = 'Power/Wavelength dependent RASHG'
-        self.data.institution = 'University of North Texas'
+        self.attrs = {
+            "title": 'Power/Wavelength dependent RASHG',
+            "institution": 'University of North Texas',
+            "sample": 'MoS2',
+            "x_pxls": "pixels",
+            "x": "micrometers",
+            "y_pxls": "pixels",
+            "y": "micrometers",
+            "wavelength": "nanometer",
+            "Polarization": "radians",
+            "degrees": "degrees",
+            "pwr": "milliwatts"
+        }
         # data.date = str(datetime.date.today()) #out of date
-        self.data.sample = 'MoS2'
-
         # create variables; in this case, the only dependent variable is 'shg',
         # which is the shg intensity along the specified dimensions
-        self.x = self.data.createVariable('x', np.uint16, ('x',), zlib=True)
-        self.y = self.data.createVariable('y', np.uint16, ('y',), zlib=True)
-        self.pol = self.data.createVariable('pol', np.uint16, ('Polarization',), zlib=True)
-        self.pol.longname = 'Polarization Angle'
-        self.pol.units = 'degree'
-        self.ori = self.data.createVariable('ori', np.uint16, ('Orientation',), zlib=True)
-        self.ori.longname = 'Output Polarization Orientation'
-        self.ori.notes = '0 corresponds to parallel, 1 to perpendicular'
-        self.pwr = self.data.createVariable('pwr', np.uint16, ('pwr',), zlib=True)
-        self.pwr.longname = 'Laser Power'
-        self.pwr.units = 'milliwatt'
-        self.wav = self.data.createVariable('wav', np.uint16, ('wavelength',), zlib=True)
-        self.wav.longname = 'Laser Wavelength'
-        self.wav.units = 'nanometer'
-        self.shg = self.data.createVariable('shg', np.uint16,
-                                            ('x', 'y', 'Orientation', 'Polarization', 'pwr', 'wavelength'))
         self.xDim = hv.Dimension('x', unit="micrometers")
         self.yDim = hv.Dimension('y', unit="micrometers")
         # populate coordinate dimensions
-        self.x[:] = np.arange(self.x.size, dtype=np.uint16)
-        self.y[:] = np.arange(self.y.size, dtype=np.uint16)
-        self.ori[:] = np.arange(self.ori.size, dtype=np.uint16)
-        self.pol[:] = np.arange(self.pol.size, dtype=np.uint16)
-        self.pwr[:] = np.arange(self.pow_start, self.pow_stop, self.pow_step, dtype=np.uint16)
-        self.wav[:] = np.arange(self.wavstart, self.wavend, self.wavstep, dtype=np.uint16)
-        self.cache = np.random.rand(x.size, y.size)
-
+        self.x = np.arange(x, dtype=np.uint16)
+        self.x_mm = np.arange(x, dtype=np.uint16) * 0.05338
+        self.y = np.arange(y, dtype=np.uint16)
+        self.y_mm = np.arange(y, dtype=np.uint16) * 0.05338
+        self.Orientation = np.arange(0,2)
+        self.Polarization = np.arange(0, 360, self.pol_step, dtype=np.uint16)
+        self.Polarization_radians = np.arange(0, 360, self.pol_step, dtype=np.uint16) * math.pi / 180
+        self.pwr = np.arange(self.pow_start, self.pow_stop, self.pow_step, dtype=np.uint16)
+        self.wavelength = np.arange(self.wavstart, self.wavend, self.wavstep, dtype=np.uint16)
+        self.cache = np.random.rand(x, y)
+        self.zeros = np.zeros((1, self.pwr.size, self.Orientation.size, self.Polarization.size, self.x.size, self.y.size))
+        os.mkdir(self.filename)
     def gather_data(self, event=None):
         self.button.disabled = True
         self.button2.disabled = True
         self.live = False
-        print("Gathering Data")
-        pit = range(self.pwr.size)  # power, polarization, wavelength, orientation respectively
-        polit = range(self.pol.size)
-        wit = range(self.wav.size)
+        pit = self.pwr  # power, polarization, wavelength, orientation respectively
+        polit = self.Polarization_radians
+        wit = self.wavelength
         self.wbar.reset(total=len(wit))
-        oit = range(self.ori.size)
+        oit = self.Orientation
+        First=True
+        print("Gathering Data")
         for w in wit:
+            coords = {
+                "wavelength": (["wavelength"], [w]),
+                "power": (["power"], self.pwr),
+                "Orientation": (["Orientation"], self.Orientation),
+                "Polarization": (["Polarization"], self.Polarization_radians),
+                "degrees": (["Polarization"], self.Polarization),
+                "x_pxls": (["x"], self.x),
+                "x": (["x"], self.x_mm),
+                "y_pxls": (["y"], self.y),
+                "y": (["y"], self.y_mm),
+            }
+            dims = ["wavelength", "power", "Orientation", "Polarization", "x", "y"]
             self.instruments.wav_step()
             self.pbar.reset(total=len(pit))
+            self.data = xr.Dataset(
+                data_vars={"ds1": (dims, self.zeros)},
+                coords=coords,
+                attrs=self.attrs
+            )
             for pw in pit:
                 self.instruments.power_step()
                 self.obar.reset(total=len(oit))
                 for o in oit:
                     for p in polit:
                         self.cache = self.instruments.get_frame(o, p)
-                        self.shg[:, :, o, p, pw, w] = self.cache
-                    self.cPol = o
-                    self.obar.update()
-                self.pbar.update()
-            self.wbar.update()
-        self.button.disabled = False
-        self.button2.disabled = False
+                        mask = {"wavelength": w, "power": pw, "Polarization": p, "Orientation": o}
+                        self.data["ds1"].loc[mask] = xr.DataArray(self.cache,dims=["x_pxls","y_pxls"])
+                    if self.GUIupdate:
+                        self.cPol = o
+                        self.obar.update()
+                if self.GUIupdate:
+                    self.pbar.update()
+            if First:
+                self.data.to_zarr(self.filename)
+                First=False
+            else:
+                self.data.to_zarr(self.filename,append_dim="wavelength")
+            if self.GUIupdate:
+                self.wbar.update()
+        print("Finished")
+        self.cPol = self.cPol + 1
+        self.data.close()
+        quit()
 
     def live_view(self, event=None):
         self.button.disabled = True
