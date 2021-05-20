@@ -1,3 +1,5 @@
+import numpy as np
+
 from .instruments_base import instruments_base
 from . import RASHG_functions as RASHG
 import time
@@ -24,10 +26,7 @@ class instruments(instruments_base):
             self.param[param].constant = True
         self.initialized = True
         self.cam, self.rbot, self.rtop, self.atten = RASHG.InitializeInstruments()
-        self.rbot.move_home()
-        self.rtop.move_home()
         print('Homing stages')
-        self.atten.move_home()
         self.cam.roi = (self.x1, self.x2, self.y1, self.y2)
         self.cam.binning = (self.xbin, self.ybin)
         if self.xbin != self.ybin:
@@ -38,11 +37,11 @@ class instruments(instruments_base):
             sys_offset = 45
         else:
             sys_offset = 0
-        pos = p
+        pos = p*90/np.pi
         pos_top = pos + sys_offset
         pos_bot = pos
-        self.rtop.move_to(pos_top)
-        self.rbot.move_to(pos_bot)
+        self.rtop.moveabs(pos_top)
+        self.rbot.moveabs(pos_bot)
         return self.cam.get_frame(exp_time=self.exp_time)
 
     def live(self):
