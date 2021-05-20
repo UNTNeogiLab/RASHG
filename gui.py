@@ -25,6 +25,9 @@ class gui(param.Parameterized):
     wavstep = param.Integer(default=2)
     wavwait = param.Number(default=5)  # value is in seconds
     filename = param.String(default="data/testfolder.zarr")
+    title = param.String(default="Power/Wavelength dependent RASHG")
+    institution = param.String(default="University of North Texas")
+    sample = param.String(default="MoS2")
     GUIupdate = param.Boolean(default=True)
     button = pn.widgets.Button(name='Gather Data', button_type='primary')
     button2 = pn.widgets.Button(name='refresh', button_type='primary')
@@ -54,7 +57,7 @@ class gui(param.Parameterized):
         self.button.on_click(self.gather_data)
         self.button2.on_click(self.live_view)
         params = ["pol_step", "pow_start", "pow_stop", "pow_step", "wavstart", "wavend", "wavstep", "wavwait",
-                  "filename"]
+                  "filename", "title", "institution", "sample"]
         for param in params:
             self.param[param].constant = True
 
@@ -63,9 +66,10 @@ class gui(param.Parameterized):
         y = (self.y2 - self.y1) / self.ybin
         # populate metadata
         self.attrs = {
-            "title": 'Power/Wavelength dependent RASHG',
-            "institution": 'University of North Texas',
-            "sample": 'MoS2',
+            "title": self.title,
+            "institution": self.institution,
+            "sample": self.sample,
+            "source": self.instruments.type,
             "x_pxls": "pixels",
             "x": "micrometers",
             "y_pxls": "pixels",

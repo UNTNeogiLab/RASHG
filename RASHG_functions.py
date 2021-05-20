@@ -33,11 +33,14 @@ def InitializeInstruments():
             print("Camera open")
     except:
         print("Error: camera not found")
+        cam = None
+        quit()
     Rotational = "K10CR1"
     if Rotational == "K10CR1":
         l = ["55001000", "55114554","55114654"]
         L = [K10CR1(i) for i in l]   # There is no serial number
         for i in L:
+            print('Homing stages')
             i.home()
     elif Rotational == "thorlabs_apt":
         l = apt.list_available_devices()

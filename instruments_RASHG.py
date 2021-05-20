@@ -12,11 +12,11 @@ class instruments(instruments_base):
     y1 = param.Integer(default=0, bounds=(0, 2047))
     y2 = param.Integer(default=100, bounds=(0, 2047))
     xbin = param.Integer(default=2)
-    ybin = param.Integer(default=2)
+    ybin = param.Integer(default=2) #TODO add bounds
     exp_time = param.Number(default=10000)
     escape_delay = param.Integer(default=120)  # should beep at 45
     wavwait = param.Number(default=5)
-
+    type = "RASHG"
     def __init__(self):
         super().__init__()
 
@@ -26,7 +26,6 @@ class instruments(instruments_base):
             self.param[param].constant = True
         self.initialized = True
         self.cam, self.rbot, self.rtop, self.atten = RASHG.InitializeInstruments()
-        print('Homing stages')
         self.cam.roi = (self.x1, self.x2, self.y1, self.y2)
         self.cam.binning = (self.xbin, self.ybin)
         if self.xbin != self.ybin:

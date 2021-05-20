@@ -5,17 +5,26 @@ import panel as pn
 from numba import njit
 
 pn.extension()
+
+
 @njit(cache=True)
-def zeros(x,y):
-    return np.zeros((x,y))
+def zeros(x, y):
+    return np.zeros((x, y))
+
+
 @njit(cache=True)
-def random(x,y):
-    return np.random.rand(x,y)
+def random(x, y):
+    return np.random.rand(x, y)
+
+
 class instruments(instruments_base):
-    x1 = param.Number(default=0)
-    x2 = param.Number(default=100)
-    y1 = param.Number(default=0)
-    y2 = param.Number(default=100)
+    x1 = param.Integer(default=0, bounds=(0, 2047))
+    x2 = param.Integer(default=100, bounds=(0, 2047))
+    y1 = param.Integer(default=0, bounds=(0, 2047))
+    y2 = param.Integer(default=100, bounds=(0, 2047))
+    ybin = 2
+    xbin = 2
+    type = "random"
 
     def __init__(self):
         super().__init__()
@@ -30,7 +39,6 @@ class instruments(instruments_base):
 
     def get_frame(self, o, p):
         return random(self.x, self.y)
-
 
     def live(self):
         return zeros(self.x, self.y)
