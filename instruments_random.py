@@ -22,8 +22,8 @@ class instruments(instruments_base):
     x2 = param.Integer(default=100, bounds=(0, 2047))
     y1 = param.Integer(default=0, bounds=(0, 2047))
     y2 = param.Integer(default=100, bounds=(0, 2047))
-    ybin = 2
-    xbin = 2
+    ybin = 1
+    xbin = 1
     type = "random"
 
     def __init__(self):

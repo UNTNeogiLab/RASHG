@@ -62,8 +62,8 @@ class gui(param.Parameterized):
             self.param[param].constant = True
 
     def init_vars(self):
-        x = (self.x2 - self.x1) / self.xbin
-        y = (self.y2 - self.y1) / self.ybin
+        x = int((self.x2 - self.x1) / self.xbin)
+        y = int((self.y2 - self.y1) / self.ybin)
         # populate metadata
         self.attrs = {
             "title": self.title,

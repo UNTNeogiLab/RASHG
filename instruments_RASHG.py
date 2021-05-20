@@ -11,8 +11,8 @@ class instruments(instruments_base):
     x2 = param.Integer(default=100, bounds=(0, 2047))
     y1 = param.Integer(default=0, bounds=(0, 2047))
     y2 = param.Integer(default=100, bounds=(0, 2047))
-    xbin = param.Integer(default=2)
-    ybin = param.Integer(default=2) #TODO add bounds
+    xbin = param.Integer(default=1)
+    ybin = param.Integer(default=1) #TODO add bounds
     exp_time = param.Number(default=10000)
     escape_delay = param.Integer(default=120)  # should beep at 45
     wavwait = param.Number(default=5)
