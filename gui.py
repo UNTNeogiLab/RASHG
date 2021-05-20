@@ -43,6 +43,7 @@ class gui(param.Parameterized):
         self.pbar = tqdm(desc="power")  # power
         self.wbar = tqdm(desc="wavelength")  # wavelength
         self.obar = tqdm(desc="orientation")  # orientation
+        self.polbar = tqdm(desc="Polarization")  # Polarization
         self.cache = np.random.rand(100, 100)
         self.button.disabled = True
         self.button2.disabled = True
@@ -138,10 +139,14 @@ class gui(param.Parameterized):
                 self.instruments.power_step()
                 self.obar.reset(total=len(oit))
                 for o in oit:
+                    self.polbar.reset(total=len(polit))
                     for p in polit:
                         self.cache = self.instruments.get_frame(o, p)
                         mask = {"wavelength": w, "power": pw, "Polarization": p, "Orientation": o}
                         self.data["ds1"].loc[mask] = xr.DataArray(self.cache, dims=["x_pxls", "y_pxls"])
+                        if self.GUIupdate and self.instruments.type=="RASHG":
+                            self.cPol=p
+                            self.polbar.update()
                     if self.GUIupdate:
                         self.cPol = o
                         self.obar.update()
