@@ -16,6 +16,7 @@ class instruments(instruments_base):
     exp_time = param.Number(default=10000)
     escape_delay = param.Integer(default=120)  # should beep at 45
     wavwait = param.Number(default=5)
+    debug=param.Boolean(default=True)
     type = "RASHG"
     def __init__(self):
         super().__init__()
@@ -39,7 +40,11 @@ class instruments(instruments_base):
         pos = p*90/np.pi
         pos_top = pos + sys_offset
         pos_bot = pos
+        if self.debug:
+            print(f"Moving A to {pos_top}")
         self.rtop.moveabs(pos_top)
+        if self.debug:
+            print(f"Moving B to {pos_bot}")
         self.rbot.moveabs(pos_bot)
         return self.cam.get_frame(exp_time=self.exp_time)
 
