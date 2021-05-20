@@ -46,6 +46,8 @@ class instruments(instruments_base):
         if self.debug:
             print(f"Moving B to {pos_bot}")
         self.rbot.moveabs(pos_bot)
+        if self.debug:
+            print(f"Capturing frame")
         return self.cam.get_frame(exp_time=self.exp_time)
 
     def live(self):

@@ -1,3 +1,4 @@
+import time
 import math
 import holoviews as hv
 import xarray as xr
@@ -114,7 +115,9 @@ class gui(param.Parameterized):
         self.wbar.reset(total=len(wit))
         oit = self.Orientation
         First = True
-        print("Gathering Data")
+        print("Gathering Data, Get Out")
+        if self.instruments.type == "RASHG":
+            time.sleep(120)
         for w in wit:
             coords = {
                 "wavelength": (["wavelength"], [w]),
@@ -144,8 +147,8 @@ class gui(param.Parameterized):
                         self.cache = self.instruments.get_frame(o, p)
                         mask = {"wavelength": w, "power": pw, "Polarization": p, "Orientation": o}
                         self.data["ds1"].loc[mask] = xr.DataArray(self.cache, dims=["x_pxls", "y_pxls"])
-                        if self.GUIupdate and self.instruments.type=="RASHG":
-                            self.cPol=p
+                        if self.GUIupdate and self.instruments.type == "RASHG":
+                            self.cPol = p
                             self.polbar.update()
                     if self.GUIupdate:
                         self.cPol = o
