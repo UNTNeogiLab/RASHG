@@ -1,16 +1,12 @@
 from pyvcam import pvc
 from pyvcam.camera import Camera
+import K10CR1
 import nidaqmx
 from nidaqmx.constants import TerminalConfiguration
 import thorpy as apt
 import numpy as np
 from scipy.optimize import curve_fit
 from scipy.interpolate import interp1d
-
-
-# import hyperspy.api as hs
-
-
 def InitializeInstruments():
     """
     Initializes the camera and rotators to the desired names.
@@ -32,12 +28,14 @@ def InitializeInstruments():
         Named Instrumental instrument object.
 
     """
+
     pvc.init_pvcam()  # Initialize PVCAM
-    cam = next(Camera.detect_camera())  # Use generator to find first camera
-    cam.open()  # Open the camera.
-    if cam.is_open == True:
-        print("Camera open")
-    else:
+    try:
+        cam = next(Camera.detect_camera())  # Use generator to find first camera
+        cam.open()  # Open the camera.
+        if cam.is_open:
+            print("Camera open")
+    except:
         print("Error: camera not found")
     l = apt.list_available_devices()
     L = [A, B, C] = [apt.Motor(i[1]) for i in l]

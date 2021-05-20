@@ -3,6 +3,8 @@ import param
 
 class instruments_base(param.Parameterized):
     initialized = param.Boolean(default=False,precedence=-1) #dummy variable to make code work
+    ybin = 2
+    xbin = 2
     def __init__(self):
         super().__init__()
 

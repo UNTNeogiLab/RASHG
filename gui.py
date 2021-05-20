@@ -47,6 +47,7 @@ class gui(param.Parameterized):
     def initialize(self, instruments):
         self.instruments = instruments
         self.x1, self.x2, self.y1, self.y2 = self.instruments.x1, self.instruments.x2, self.instruments.y1, self.instruments.y2
+        self.xbin, self.ybin = self.instruments.xbin, self.instruments.ybin
         self.init_vars()
         self.button.disabled = False
         self.button2.disabled = False
@@ -58,10 +59,8 @@ class gui(param.Parameterized):
             self.param[param].constant = True
 
     def init_vars(self):
-        x = self.x2 - self.x1
-        y = self.y2 - self.y1
-        power = (self.pow_stop - self.pow_start) / (self.pow_step)
-        Polarization = 360 / self.pol_step
+        x = (self.x2 - self.x1) / self.xbin
+        y = (self.y2 - self.y1) / self.ybin
         # populate metadata
         self.attrs = {
             "title": 'Power/Wavelength dependent RASHG',
@@ -145,7 +144,7 @@ class gui(param.Parameterized):
                 if self.GUIupdate:
                     self.pbar.update()
             if First:
-                self.data.to_zarr(self.filename, encoding={"ds1": {"compressor": compressor}},consolidated=True)
+                self.data.to_zarr(self.filename, encoding={"ds1": {"compressor": compressor}}, consolidated=True)
                 First = False
             else:
                 self.data.to_zarr(self.filename, append_dim="wavelength")

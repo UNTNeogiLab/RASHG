@@ -3,20 +3,23 @@ from . import RASHG_functions as RASHG
 import time
 import param
 
+
 class instruments(instruments_base):
-    x1 = param.Integer(default=0,bounds=(0,2047))
-    x2 = param.Integer(default=100,bounds=(0,2047))
-    y1 = param.Integer(default=0,bounds=(0,2047))
-    y2 = param.Integer(default=100,bounds=(0,2047))
+    x1 = param.Integer(default=0, bounds=(0, 2047))
+    x2 = param.Integer(default=100, bounds=(0, 2047))
+    y1 = param.Integer(default=0, bounds=(0, 2047))
+    y2 = param.Integer(default=100, bounds=(0, 2047))
+    xbin = param.Integer(default=2)
+    ybin = param.Integer(default=2)
     exp_time = param.Number(default=10000)
-    escape_delay = param.Integer(default=120) #should beep at 45
+    escape_delay = param.Integer(default=120)  # should beep at 45
     wavwait = param.Number(default=5)
 
     def __init__(self):
         super().__init__()
 
     def initialize(self):
-        params = ["x1", "x2", "y1", "y2","exp_time","escape_delay","wavwait"] #list of parameters to lock
+        params = ["x1", "x2", "y1", "y2", "exp_time", "escape_delay", "wavwait"]  # list of parameters to lock
         for param in params:
             self.param[param].constant = True
         self.initialized = True
@@ -26,6 +29,9 @@ class instruments(instruments_base):
         print('Homing stages')
         self.atten.move_home()
         self.cam.roi = (self.x1, self.x2, self.y1, self.y2)
+        self.cam.binning = (self.xbin, self.ybin)
+        if self.xbin != self.ybin:
+            print('X-bin and Y-bin must be equal, probably')
 
     def get_frame(self, o, p):
         if o == 1:
