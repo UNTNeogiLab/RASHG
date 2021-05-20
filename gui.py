@@ -117,7 +117,8 @@ class gui(param.Parameterized):
         First = True
         print("Gathering Data, Get Out")
         if self.instruments.type == "RASHG":
-            time.sleep(120)
+            if not self.instruments.debug:
+                time.sleep(120)
         for w in wit:
             coords = {
                 "wavelength": (["wavelength"], [w]),
