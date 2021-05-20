@@ -38,7 +38,7 @@ def InitializeInstruments():
         l = ["55001000", "55114554","55114654"]
         L = [K10CR1(i) for i in l]   # There is no serial number
         for i in L:
-            print('Homing stages')
+            print(f'Homing stage {i}')
             i.home()
     elif Rotational == "thorlabs_apt":
         l = apt.list_available_devices()

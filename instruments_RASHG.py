@@ -21,7 +21,7 @@ class instruments(instruments_base):
         super().__init__()
 
     def initialize(self):
-        params = ["x1", "x2", "y1", "y2", "exp_time", "escape_delay", "wavwait"]  # list of parameters to lock
+        params = ["x1", "x2", "y1", "y2", "exp_time", "escape_delay", "wavwait","xbin","ybin"]  # list of parameters to lock
         for param in params:
             self.param[param].constant = True
         self.initialized = True
