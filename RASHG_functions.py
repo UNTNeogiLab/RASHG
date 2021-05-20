@@ -32,9 +32,7 @@ def InitializeInstruments():
         if cam.is_open:
             print("Camera open")
     except:
-        print("Error: camera not found")
-        cam = None
-        quit()
+        raise Exception("Error: camera not found")
     Rotational = "K10CR1"
     if Rotational == "K10CR1":
         l = ["55001000", "55114554","55114654"]
