@@ -54,7 +54,6 @@ class instruments(instruments_base):
         return self.cam.get_frame(exp_time=self.exp_time)
 
     def wav_step(self):
-        self.cam.roi = (self.x1, self.x2, self.y1, self.y2)
         time.sleep(self.wavwait)
 
     def widgets(self):
