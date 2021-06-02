@@ -27,11 +27,11 @@ except:
 print("C.serial = " + C.serial)
 #C.offset = Offset*u.degree
 
-
-daq = instrument('daq')
-rm = pyvisa.ResourceManager()
-Pmeter = rm.open_resource('ASRL3::INSTR')
-MaiTai = rm.open_resource('ASRL1::INSTR')
+if __name__ == '__main__':
+    daq = instrument('daq')
+    rm = pyvisa.ResourceManager()
+    Pmeter = rm.open_resource('ASRL3::INSTR')
+    MaiTai = rm.open_resource('ASRL1::INSTR')
 
 #%%
     

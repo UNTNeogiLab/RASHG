@@ -42,16 +42,16 @@ def PCFit(file):
     
     return PC, PCcov, WavPowAng, pc
 
+if __name__ == '__main__':
+    PC, PCcov, WavPowAng, pc = PCFit('PowerCalib200626.npy')
 
-PC, PCcov, WavPowAng, pc = PCFit('PowerCalib200626.npy')
 
-
-fig, axs = plt.subplots(nrows=2, ncols=2, sharex=False)
-ax1 = axs[0,0]
-ax2 = axs[0,1]
-ax3 = axs[1,0]
-ax4 = axs[1,1]
-X = np.linspace(0,50,51)
+    fig, axs = plt.subplots(nrows=2, ncols=2, sharex=False)
+    ax1 = axs[0,0]
+    ax2 = axs[0,1]
+    ax3 = axs[1,0]
+    ax4 = axs[1,1]
+    X = np.linspace(0,50,51)
 
 for i in range(0,len(pc),1):
     ax1.errorbar(pc[i,1][0],pc[i,1][1],yerr = pc[i,1][2])

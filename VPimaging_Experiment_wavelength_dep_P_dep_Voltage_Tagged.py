@@ -77,13 +77,13 @@ def InitializeInstruments():
     
     return cam, A, B, C
 
+if __name__ == '__main__':
+    cam, rotator_bottom, rotator_top, C = InitializeInstruments()
+    #%%
 
-cam, rotator_bottom, rotator_top, C = InitializeInstruments()
-#%%
-
-rm = pyvisa.ResourceManager()
-Pmeter = rm.open_resource('ASRL3::INSTR')
-MaiTai = rm.open_resource('ASRL1::INSTR')
+    rm = pyvisa.ResourceManager()
+    Pmeter = rm.open_resource('ASRL3::INSTR')
+    MaiTai = rm.open_resource('ASRL1::INSTR')
 
 #%% InitializeDateFolder
 def InitializeDateFolder(location='E:\\Imaging'):
@@ -732,9 +732,9 @@ def WavelengthRASHG(wav_start, wav_stop, wav_step,
     #print(f'MaiTai off a {toctoc} \n Time elapsed = {te}')
     
 
- 
-PC, PCcov, WavPowAng, pc = PCFit(
-    'C:/Users/Mai Tai/Desktop/Python Code/PowerCalib200617.npy')
+if __name__ == '__main__':
+    PC, PCcov, WavPowAng, pc = PCFit(
+        'C:/Users/Mai Tai/Desktop/Python Code/PowerCalib200617.npy')
 #WavelengthRASHG(5, 780, 920, 2, 60, 2, 1000, 'MoS2_hierres_wav', 'Y+V', False)    
     
 
