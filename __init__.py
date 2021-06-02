@@ -1,4 +1,8 @@
+import os
+
 instruments = {}
+for file in os.listdir('.'):
+    print(file)
 try:
     from . import instruments_random as random
 except ImportError:
