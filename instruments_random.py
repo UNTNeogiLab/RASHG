@@ -41,7 +41,7 @@ class instruments(instruments_base):
         return random(self.x, self.y)
 
     def live(self):
-        return zeros(self.x, self.y)
+        return random(self.x, self.y) * 10
 
     def widgets(self):
         return self.param

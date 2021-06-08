@@ -34,6 +34,7 @@ class gui(param.Parameterized):
     button2 = pn.widgets.Button(name='refresh', button_type='primary')
     live = param.Boolean(default=True, precedence=-1)
     refresh = 5  # refresh every 5 seconds #make it a parameter
+    live_refresh = param.Integer(default=5)
 
     @param.depends('cPol')
     def progressBar(self):
@@ -55,11 +56,11 @@ class gui(param.Parameterized):
         self.xbin, self.ybin = self.instruments.xbin, self.instruments.ybin
         self.init_vars()
         self.button.disabled = False
-        self.button2.disabled = False
         self.button.on_click(self.gather_data)
-        self.button2.on_click(self.live_view)
+        self.live = True
+        pn.state.add_periodic_callback(self.live_view, period=self.live_refresh * 1000)
         params = ["pol_step", "pow_start", "pow_stop", "pow_step", "wavstart", "wavend", "wavstep", "wavwait",
-                  "filename", "title", "institution", "sample"]
+                  "filename", "title", "institution", "sample","live_refresh"]
         for param in params:
             self.param[param].constant = True
 
@@ -88,9 +89,9 @@ class gui(param.Parameterized):
         self.yDim = hv.Dimension('y', unit="micrometers")
         # populate coordinate dimensions
         self.x = np.arange(x, dtype=np.uint16)
-        self.x_mm = np.arange(x, dtype=np.uint16) * 0.05338
+        self.x_mm = np.arange(x, dtype=np.uint16) * 0.05338  # magic
         self.y = np.arange(y, dtype=np.uint16)
-        self.y_mm = np.arange(y, dtype=np.uint16) * 0.05338
+        self.y_mm = np.arange(y, dtype=np.uint16) * 0.05338  # magic
         self.Orientation = np.arange(0, 2)
         self.Polarization = np.arange(0, 360, self.pol_step, dtype=np.uint16)
         self.Polarization_radians = np.arange(0, 360, self.pol_step, dtype=np.uint16) * math.pi / 180
@@ -99,11 +100,13 @@ class gui(param.Parameterized):
         self.cache = np.random.rand(x, y)
         self.zeros = np.zeros(
             (1, self.pwr.size, self.Orientation.size, self.Polarization.size, self.x.size, self.y.size))
-        if os.path.isdir(self.filename):
-            print("Zarr store exists, exiting")
-            quit()
-        else:
-            os.mkdir(self.filename)
+        fname = self.filename
+        i = 2
+        while os.path.isdir(self.filename):
+            self.filename = fname.replace(".zarr", f"{i}.zarr")
+            i += 1
+            print(f"Zarr store exists, trying {self.filename}")
+        os.mkdir(self.filename)
 
     def gather_data(self, event=None):
         self.button.disabled = True
@@ -168,12 +171,11 @@ class gui(param.Parameterized):
         self.data.close()
         quit()
 
-    def live_view(self, event=None):
-        self.button.disabled = True
-        print("Initializing live view")
-        self.cache = self.instruments.live()
-        self.cPol = self.cPol + 1
-        self.button.disabled = False
+    def live_view(self):
+        if (self.live):
+            print("Updating live view")
+            self.cache = self.instruments.live()
+            self.cPol = self.cPol + 1
 
     @param.depends('cPol')
     def graph(self):
@@ -183,8 +185,11 @@ class gui(param.Parameterized):
         return hv.Image(output, vdims=self.zdim).opts(opts).redim(x=self.xDim, y=self.yDim)
 
     def widgets(self):
-        return pn.Column(self.button, self.button2)
+        return pn.Column(self.button)
 
     def output(self):
 
         return pn.Row(self.progressBar, self.graph)
+
+    def stop(self):
+        print("shutting down live view")  # doesn't currently  work
