@@ -18,6 +18,10 @@ class instruments(instruments_base):
     wavwait = param.Number(default=5)
     debug=param.Boolean(default=True)
     type = "RASHG"
+    def start(self):
+        print("Gathering Data, Get Out")
+        if not self.debug:
+            time.sleep(120)
     def __init__(self):
         super().__init__()
 

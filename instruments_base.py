@@ -25,3 +25,6 @@ class instruments_base(param.Parameterized):
 
     def widgets(self):
         return self.param
+
+    def start(self):
+        pass

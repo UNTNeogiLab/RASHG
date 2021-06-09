@@ -1,5 +1,3 @@
-import time
-
 import holoviews as hv
 import xarray as xr
 import numpy as np
@@ -8,6 +6,7 @@ import param
 from tqdm.notebook import tqdm
 import os
 import zarr
+import itertools
 
 pn.extension('plotly')
 hv.extension('bokeh', 'plotly')
@@ -17,10 +16,7 @@ compressor = zarr.Blosc(cname="zstd", clevel=3, shuffle=2)
 class gui(param.Parameterized):
     colorMap = param.ObjectSelector(default="fire", objects=hv.plotting.util.list_cmaps())
     cPol = param.Number(default=0, precedence=-1)
-    pol_step = param.Number(default=2, bounds=(1, 2))  # TODO: figure out how this works
-    pow_start = param.Integer(default=0)
-    pow_stop = param.Integer(default=5)
-    pow_step = param.Integer(default=5)
+
 
     wavwait = param.Number(default=5)  # value is in seconds
     filename = param.String(default="data/testfolder.zarr")
@@ -36,60 +32,50 @@ class gui(param.Parameterized):
 
     @param.depends('cPol')
     def progressBar(self):
-        return pn.Column(self.pbar, self.wbar, self.obar)
+        return pn.Column(*self.bars)
 
     def __init__(self):
         super().__init__()
-        self.pbar = tqdm(desc="power")  # power
-        self.wbar = tqdm(desc="wavelength")  # wavelength
-        self.obar = tqdm(desc="orientation")  # orientation
-        self.polbar = tqdm(desc="Polarization")  # Polarization
+        self.xDim = hv.Dimension('x', unit="micrometers")
+        self.yDim = hv.Dimension('y', unit="micrometers")
         self.cache = np.random.rand(100, 100)
         self.button.disabled = True
         self.button2.disabled = True
 
     def initialize(self, instruments):
         self.instruments = instruments
-        self.x1, self.x2, self.y1, self.y2 = self.instruments.x1, self.instruments.x2, self.instruments.y1, self.instruments.y2
-        self.xbin, self.ybin = self.instruments.xbin, self.instruments.ybin
         self.init_vars()
         self.button.disabled = False
         self.button.on_click(self.gather_data)
         self.live = True
         pn.state.add_periodic_callback(self.live_view, period=self.live_refresh * 1000)
-        params = ["pol_step", "pow_start", "pow_stop", "pow_step", "wavstart", "wavend", "wavstep", "wavwait",
-                  "filename", "title", "institution", "sample","live_refresh"]
-        for param in params:
-            self.param[param].constant = True
+        exclude = ["cPol","live"]
+        for param in self.param:
+            if not param in exclude:
+                self.param[param].constant = True
 
     def init_vars(self):
-        x = int((self.x2 - self.x1) / self.xbin)
-        y = int((self.y2 - self.y1) / self.ybin)
+
         # populate metadata
         self.attrs = {
             "title": self.title,
             "institution": self.institution,
             "sample": self.sample,
             "source": self.instruments.type,
-            "x_pxls": "pixels",
-            "x": "micrometers",
-            "y_pxls": "pixels",
-            "y": "micrometers",
-            "wavelength": "nanometer",
-            "Polarization": "radians",
-            "degrees": "degrees",
-            "pwr": "milliwatts"
         }
+        for coord in self.instruments.coords:
+            self.attrs[coord] = self.instruments.coords[coord]["unit"]
+        print(self.attrs)
+        self.bars = [tqdm(desc=self.instruments.coords[coord]["name"]) for coord in self.instruments.loop_coords]
         # data.date = str(datetime.date.today()) #out of date
         # create variables; in this case, the only dependent variable is 'shg',
         # which is the shg intensity along the specified dimensions
-        self.xDim = hv.Dimension('x', unit="micrometers")
-        self.yDim = hv.Dimension('y', unit="micrometers")
         # populate coordinate dimensions
 
-        self.cache = np.random.rand(x, y)
-        self.zeros = np.zeros(
-            (1, self.pwr.size, self.Orientation.size, self.Polarization.size, self.x.size, self.y.size))
+        self.cache = self.instruments.live()
+        #self.zeros = np.zeros(
+        #    (1, self.pwr.size, self.Orientation.size, self.Polarization.size, self.x.size, self.y.size))
+
         fname = self.filename
         i = 2
         while os.path.isdir(self.filename):
@@ -102,16 +88,12 @@ class gui(param.Parameterized):
         self.button.disabled = True
         self.button2.disabled = True
         self.live = False
-        pit = self.pwr  # power, polarization, wavelength, orientation respectively
-        polit = self.Polarization_radians
-        wit = self.wavelength
-        self.wbar.reset(total=len(wit))
-        oit = self.Orientation
+          # power, polarization, wavelength, orientation respectively
         First = True
-        print("Gathering Data, Get Out")
-        if self.instruments.type == "RASHG":
-            if not self.instruments.debug:
-                time.sleep(120)
+        ranges=[self.instruments.coords[coord]["values"] for coord in self.instruments.loop_coords]
+        for xs in itertools.product(*ranges):
+            print(*xs)
+        self.instruments.start()
         for w in wit:
             coords = {
                 "wavelength": (["wavelength"], [w]),
