@@ -1,5 +1,5 @@
 import time
-import math
+
 import holoviews as hv
 import xarray as xr
 import numpy as np
@@ -21,9 +21,7 @@ class gui(param.Parameterized):
     pow_start = param.Integer(default=0)
     pow_stop = param.Integer(default=5)
     pow_step = param.Integer(default=5)
-    wavstart = param.Integer(default=780)
-    wavend = param.Integer(default=800)
-    wavstep = param.Integer(default=2)
+
     wavwait = param.Number(default=5)  # value is in seconds
     filename = param.String(default="data/testfolder.zarr")
     title = param.String(default="Power/Wavelength dependent RASHG")
@@ -88,15 +86,7 @@ class gui(param.Parameterized):
         self.xDim = hv.Dimension('x', unit="micrometers")
         self.yDim = hv.Dimension('y', unit="micrometers")
         # populate coordinate dimensions
-        self.x = np.arange(x, dtype=np.uint16)
-        self.x_mm = np.arange(x, dtype=np.uint16) * 0.05338  # magic
-        self.y = np.arange(y, dtype=np.uint16)
-        self.y_mm = np.arange(y, dtype=np.uint16) * 0.05338  # magic
-        self.Orientation = np.arange(0, 2)
-        self.Polarization = np.arange(0, 360, self.pol_step, dtype=np.uint16)
-        self.Polarization_radians = np.arange(0, 360, self.pol_step, dtype=np.uint16) * math.pi / 180
-        self.pwr = np.arange(self.pow_start, self.pow_stop, self.pow_step, dtype=np.uint16)
-        self.wavelength = np.arange(self.wavstart, self.wavend, self.wavstep, dtype=np.uint16)
+
         self.cache = np.random.rand(x, y)
         self.zeros = np.zeros(
             (1, self.pwr.size, self.Orientation.size, self.Polarization.size, self.x.size, self.y.size))

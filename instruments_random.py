@@ -3,6 +3,7 @@ import numpy as np
 import param
 import panel as pn
 from numba import njit
+import math
 
 pn.extension()
 
@@ -22,9 +23,13 @@ class instruments(instruments_base):
     x2 = param.Integer(default=100, bounds=(0, 2047))
     y1 = param.Integer(default=0, bounds=(0, 2047))
     y2 = param.Integer(default=100, bounds=(0, 2047))
+    wavstart = param.Integer(default=780)
+    wavend = param.Integer(default=800)
+    wavstep = param.Integer(default=2)
     ybin = 1
     xbin = 1
     type = "random"
+    dimensions = ["wavelength", "power", "Orientation", "Polarization", "x", "y"]
 
     def __init__(self):
         super().__init__()
@@ -36,6 +41,20 @@ class instruments(instruments_base):
         params = ["x1", "x2", "y1", "y2"]
         for param in params:
             self.param[param].constant = True
+        self.wavelength = np.arange(self.wavstart, self.wavend, self.wavstep, dtype=np.uint16)
+        self.pwr = np.arange(self.pow_start, self.pow_stop, self.pow_step, dtype=np.uint16)
+        self.x = np.arange(x, dtype=np.uint16)
+        self.x_mm = np.arange(x, dtype=np.uint16) * 0.05338  # magic
+        self.y = np.arange(y, dtype=np.uint16)
+        self.y_mm = np.arange(y, dtype=np.uint16) * 0.05338  # magic
+        self.Orientation = np.arange(0, 2)
+        self.Polarization = np.arange(0, 360, self.pol_step, dtype=np.uint16)
+        self.Polarization_radians = np.arange(0, 360, self.pol_step, dtype=np.uint16) * math.pi / 180
+        self.pwr = np.arange(self.pow_start, self.pow_stop, self.pow_step, dtype=np.uint16)
+        coords = {
+            "wavelength": {"unit": "nanometer", "dimension": "wavelength", "values": self.wavelength},
+
+        }
 
     def get_frame(self, o, p):
         return random(self.x, self.y)
