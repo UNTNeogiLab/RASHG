@@ -1,7 +1,7 @@
 from pyvcam import pvc
 from pyvcam.camera import Camera
 from K10CR1.k10cr1 import K10CR1
-import thorpy as apt
+#import thorpy as apt
 
 
 def InitializeInstruments():
