@@ -3,6 +3,7 @@ import xarray as xr
 import numpy as np
 import panel as pn
 import param
+from numba import njit
 from tqdm.notebook import tqdm
 import os
 import zarr
@@ -13,10 +14,16 @@ hv.extension('bokeh', 'plotly')
 compressor = zarr.Blosc(cname="zstd", clevel=3, shuffle=2)
 
 
+@njit(cache=True)
+def compare(xs, dim_cache):
+    for i in range(0,len(xs)):
+        if xs[i] > dim_cache[i]:
+            return i
+
+
 class gui(param.Parameterized):
     colorMap = param.ObjectSelector(default="fire", objects=hv.plotting.util.list_cmaps())
     cPol = param.Number(default=0, precedence=-1)
-
 
     wavwait = param.Number(default=5)  # value is in seconds
     filename = param.String(default="data/testfolder.zarr")
@@ -29,6 +36,7 @@ class gui(param.Parameterized):
     live = param.Boolean(default=True, precedence=-1)
     refresh = 5  # refresh every 5 seconds #make it a parameter
     live_refresh = param.Integer(default=5)
+    dim_cache = [0, 0, 0, 0]
 
     @param.depends('cPol')
     def progressBar(self):
@@ -49,7 +57,7 @@ class gui(param.Parameterized):
         self.button.on_click(self.gather_data)
         self.live = True
         pn.state.add_periodic_callback(self.live_view, period=self.live_refresh * 1000)
-        exclude = ["cPol","live"]
+        exclude = ["cPol", "live"]
         for param in self.param:
             if not param in exclude:
                 self.param[param].constant = True
@@ -73,7 +81,7 @@ class gui(param.Parameterized):
         # populate coordinate dimensions
 
         self.cache = self.instruments.live()
-        #self.zeros = np.zeros(
+        # self.zeros = np.zeros(
         #    (1, self.pwr.size, self.Orientation.size, self.Polarization.size, self.x.size, self.y.size))
 
         fname = self.filename
@@ -82,17 +90,27 @@ class gui(param.Parameterized):
             self.filename = fname.replace(".zarr", f"{i}.zarr")
             i += 1
             print(f"Zarr store exists, trying {self.filename}")
-        os.mkdir(self.filename)
+        try:
+            os.mkdir(self.filename)
+        except:
+            raise Exception("folder to create zarr store does not exist")
 
     def gather_data(self, event=None):
         self.button.disabled = True
         self.button2.disabled = True
         self.live = False
-          # power, polarization, wavelength, orientation respectively
+        # power, polarization, wavelength, orientation respectively
         First = True
-        ranges=[self.instruments.coords[coord]["values"] for coord in self.instruments.loop_coords]
+        ranges = [self.instruments.coords[coord]["values"] for coord in self.instruments.loop_coords]
+        '''
+        The infinite loop:
+        not because it is an actual infinite loop but because it supports a theoretical infinite number of dimensions
+        memory limits nonwithstanding
+        '''
         for xs in itertools.product(*ranges):
+            dim = self.find_dim(xs)
             print(*xs)
+            print(dim)
         self.instruments.start()
         for w in wit:
             coords = {
@@ -142,6 +160,12 @@ class gui(param.Parameterized):
         self.cPol = self.cPol + 1
         self.data.close()
         quit()
+
+    def find_dim(self, xs):
+        typed_a = np.array(xs,dtype=np.float64)
+        dim = compare(typed_a, self.dim_cache)
+        self.dim_cache = typed_a
+        return self.instruments.loop_coords[dim]
 
     def live_view(self):
         if (self.live):
