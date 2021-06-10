@@ -16,7 +16,7 @@ compressor = zarr.Blosc(cname="zstd", clevel=3, shuffle=2)
 
 @njit(cache=True)
 def compare(xs, dim_cache):
-    for i in range(0,len(xs)):
+    for i in range(0, len(xs)):
         if xs[i] > dim_cache[i]:
             return i
 
@@ -36,7 +36,7 @@ class gui(param.Parameterized):
     live = param.Boolean(default=True, precedence=-1)
     refresh = 5  # refresh every 5 seconds #make it a parameter
     live_refresh = param.Integer(default=5)
-    dim_cache = [0, 0, 0, 0]
+    dim_cache = np.array([0, 0, 0, 0])
 
     @param.depends('cPol')
     def progressBar(self):
@@ -71,8 +71,11 @@ class gui(param.Parameterized):
             "sample": self.sample,
             "source": self.instruments.type,
         }
+        self.coords = {}
         for coord in self.instruments.coords:
-            self.attrs[coord] = self.instruments.coords[coord]["unit"]
+            values = self.instruments.coords[coord]
+            self.attrs[coord] = values["unit"]
+            self.coords[coord] = ([values["dimension"]], values["values"])
         print(self.attrs)
         self.bars = [tqdm(desc=self.instruments.coords[coord]["name"]) for coord in self.instruments.loop_coords]
         # data.date = str(datetime.date.today()) #out of date
@@ -81,9 +84,10 @@ class gui(param.Parameterized):
         # populate coordinate dimensions
 
         self.cache = self.instruments.live()
-        # self.zeros = np.zeros(
-        #    (1, self.pwr.size, self.Orientation.size, self.Polarization.size, self.x.size, self.y.size))
-
+        zero_array = [self.instruments.coords[coord]["values"].size for coord in self.instruments.dimensions]
+        zero_array[0] = 1
+        self.zeros = xr.DataArray(np.zeros(zero_array),dims=self.instruments.dimensions)
+        # Get filename
         fname = self.filename
         i = 2
         while os.path.isdir(self.filename):
@@ -99,73 +103,56 @@ class gui(param.Parameterized):
         self.button.disabled = True
         self.button2.disabled = True
         self.live = False
+        self.mask = {}
         # power, polarization, wavelength, orientation respectively
         First = True
         ranges = [self.instruments.coords[coord]["values"] for coord in self.instruments.loop_coords]
+        self.instruments.start()
         '''
         The infinite loop:
         not because it is an actual infinite loop but because it supports a theoretical infinite number of dimensions
         memory limits nonwithstanding
         '''
+        i = 0
+        for dim in self.instruments.loop_coords:
+            self.bars[i].reset(total=len(self.instruments.coords[dim]["values"]))
+            i += 1
         for xs in itertools.product(*ranges):
-            dim = self.find_dim(xs)
-            print(*xs)
-            print(dim)
-        self.instruments.start()
-        for w in wit:
-            coords = {
-                "wavelength": (["wavelength"], [w]),
-                "power": (["power"], self.pwr),
-                "Orientation": (["Orientation"], self.Orientation),
-                "Polarization": (["Polarization"], self.Polarization_radians),
-                "degrees": (["Polarization"], self.Polarization),
-                "x_pxls": (["x"], self.x),
-                "x": (["x"], self.x_mm),
-                "y_pxls": (["y"], self.y),
-                "y": (["y"], self.y_mm),
-            }
-            dims = ["wavelength", "power", "Orientation", "Polarization", "x", "y"]
-            self.instruments.wav_step()
-            self.pbar.reset(total=len(pit))
+            dim, dim_num = self.find_dim(xs)
+            if dim_num == 0:
+                self.coords[self.instruments.loop_coords[0]] = ([dim],[xs[0]])
             self.data = xr.Dataset(
-                data_vars={"ds1": (dims, self.zeros, self.attrs)},
-                coords=coords,
+                data_vars={"ds1": (self.instruments.dimensions, self.zeros, self.attrs)},
+                coords=self.coords,
                 attrs=self.attrs
             )
-            for pw in pit:
-                self.instruments.power_step()
-                self.obar.reset(total=len(oit))
-                for o in oit:
-                    self.polbar.reset(total=len(polit))
-                    for p in polit:
-                        self.cache = self.instruments.get_frame(o, p)
-                        mask = {"wavelength": w, "power": pw, "Polarization": p, "Orientation": o}
-                        self.data["ds1"].loc[mask] = xr.DataArray(self.cache, dims=["x_pxls", "y_pxls"])
-                        if self.GUIupdate and self.instruments.type == "RASHG":
-                            self.cPol = p
-                            self.polbar.update()
-                    if self.GUIupdate:
-                        self.cPol = o
-                        self.obar.update()
-                if self.GUIupdate:
-                    self.pbar.update()
+            self.mask[dim] = xs[dim_num]
+            function = self.instruments.coords[dim]["function"]
+            if not function == "none":
+                function()
+            if not dim_num == len(xs) - 1:  # reset for all but the last dimension
+                self.bars[dim_num + 1].reset()
+            else:
+                self.cache = self.instruments.get_frame(xs)
+                self.data["ds1"].loc[self.mask] = xr.DataArray(self.cache, dims=self.instruments.cap_coords)
+            self.bars[dim_num].update()
+            if self.GUIupdate:
+                self.cPol += 1  # refresh the GUI
             if First:
                 self.data.to_zarr(self.filename, encoding={"ds1": {"compressor": compressor}}, consolidated=True)
                 First = False
             else:
                 self.data.to_zarr(self.filename, append_dim="wavelength")
-            if self.GUIupdate:
-                self.wbar.update()
         print("Finished")
         self.cPol = self.cPol + 1
         self.data.close()
         quit()
 
     def find_dim(self, xs):
-        typed_a = np.array(xs,dtype=np.float64)
+        typed_a = np.array(xs, dtype=np.float64)
         dim = compare(typed_a, self.dim_cache)
         self.dim_cache = typed_a
-        return self.instruments.loop_coords[dim]
+        return self.instruments.loop_coords[dim], dim
 
     def live_view(self):
         if (self.live):

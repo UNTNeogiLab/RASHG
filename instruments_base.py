@@ -11,16 +11,10 @@ class instruments_base(param.Parameterized):
     def initialize(self):
         pass
 
-    def get_frame(self, o, p):
+    def get_frame(self, xs):
         pass
 
     def live(self):
-        pass
-
-    def power_step(self):
-        pass
-
-    def wav_step(self):
         pass
 
     def widgets(self):

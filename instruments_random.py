@@ -49,7 +49,7 @@ class instruments(instruments_base):
         self.coords = {
             "wavelength": {"name": "wavelength", "unit": "nanometer", "dimension": "wavelength",
                            "values": self.wavelength, "function": "none"},
-            "pwr": {"name": "Power", "unit": "milliwatts", "dimension": "power", "values": self.Orientation,
+            "power": {"name": "Power", "unit": "milliwatts", "dimension": "power", "values": self.pwr,
                     "function": "none"},
             "degrees": {"name": "Polarization", "unit": "degrees", "dimension": "Polarization",
                         "values": self.Polarization, "function": "none"},
@@ -63,7 +63,7 @@ class instruments(instruments_base):
                             "function": "none"},
         }
         self.cap_coords = ["x", "y"]
-        self.loop_coords = ["wavelength", "pwr", "degrees", "Polarization"]
+        self.loop_coords = ["wavelength", "power", "Orientation", "Polarization"]
 
     def init_vars(self):
         self.x = self.x2 - self.x1
@@ -83,7 +83,7 @@ class instruments(instruments_base):
 
         # seperates all the variables
 
-    def get_frame(self, o, p):
+    def get_frame(self, xs):
         return random(self.x, self.y)
 
     def live(self):
