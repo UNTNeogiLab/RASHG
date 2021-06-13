@@ -8,6 +8,7 @@ from tqdm.notebook import tqdm
 import os
 import zarr
 import itertools
+from tqdm.contrib.itertools import product
 
 pn.extension('plotly')
 hv.extension('bokeh', 'plotly')
@@ -86,7 +87,7 @@ class gui(param.Parameterized):
         self.cache = self.instruments.live()
         zero_array = [self.instruments.coords[coord]["values"].size for coord in self.instruments.dimensions]
         zero_array[0] = 1
-        self.zeros = xr.DataArray(np.zeros(zero_array),dims=self.instruments.dimensions)
+        self.zeros = xr.DataArray(np.zeros(zero_array), dims=self.instruments.dimensions)
         # Get filename
         fname = self.filename
         i = 2
@@ -104,8 +105,7 @@ class gui(param.Parameterized):
         self.button2.disabled = True
         self.live = False
         self.mask = {}
-        # power, polarization, wavelength, orientation respectively
-        First = True
+        First = 0
         ranges = [self.instruments.coords[coord]["values"] for coord in self.instruments.loop_coords]
         self.instruments.start()
         '''
@@ -116,11 +116,20 @@ class gui(param.Parameterized):
         i = 0
         for dim in self.instruments.loop_coords:
             self.bars[i].reset(total=len(self.instruments.coords[dim]["values"]))
+            self.mask[dim] = min(self.instruments.coords[dim]["values"])
             i += 1
-        for xs in itertools.product(*ranges):
+        print(self.zeros)
+        for xs in product(*ranges):
             dim, dim_num = self.find_dim(xs)
             if dim_num == 0:
-                self.coords[self.instruments.loop_coords[0]] = ([dim],[xs[0]])
+                if First == 0:
+                    First = 1
+                elif First == 1:
+                    self.data.to_zarr(self.filename, encoding={"ds1": {"compressor": compressor}}, consolidated=True)
+                    First += 1
+                else:
+                    self.data.to_zarr(self.filename, append_dim=self.instruments.loop_coords[0])
+                self.coords[self.instruments.loop_coords[0]] = ([dim], [xs[0]])  # update 1st coord after saving
             self.data = xr.Dataset(
                 data_vars={"ds1": (self.instruments.dimensions, self.zeros, self.attrs)},
                 coords=self.coords,
@@ -135,14 +144,12 @@ class gui(param.Parameterized):
             else:
                 self.cache = self.instruments.get_frame(xs)
                 self.data["ds1"].loc[self.mask] = xr.DataArray(self.cache, dims=self.instruments.cap_coords)
-            self.bars[dim_num].update()
             if self.GUIupdate:
                 self.cPol += 1  # refresh the GUI
-            if First:
-                self.data.to_zarr(self.filename, encoding={"ds1": {"compressor": compressor}}, consolidated=True)
-                First = False
-            else:
-                self.data.to_zarr(self.filename, append_dim="wavelength")
+            if not (dim_num == 0 and First == 1):
+                self.bars[dim_num].update()  # don't update the first run ever
+        self.data.to_zarr(self.filename, append_dim=self.instruments.loop_coords[0])
+        self.bars[0].update()
         print("Finished")
         self.cPol = self.cPol + 1
         self.data.close()
