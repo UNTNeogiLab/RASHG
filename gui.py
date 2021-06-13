@@ -112,6 +112,7 @@ class gui(param.Parameterized):
         The infinite loop:
         not because it is an actual infinite loop but because it supports a theoretical infinite number of dimensions
         memory limits nonwithstanding
+        The generator should be lazy and not overflow your memory. Theoretically.
         '''
         i = 0
         for dim in self.instruments.loop_coords:
