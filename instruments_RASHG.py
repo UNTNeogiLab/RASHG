@@ -50,7 +50,7 @@ class instruments(instruments_base):
         self.init_vars()
         self.coords = {
             "wavelength": {"name": "wavelength", "unit": "nanometer", "dimension": "wavelength",
-                           "values": self.wavelength, "function": "none"},
+                           "values": self.wavelength, "function": self.wavstep},
             "power": {"name": "Power", "unit": "milliwatts", "dimension": "power", "values": self.pwr,
                       "function": "none"},
             "degrees": {"name": "Polarization", "unit": "degrees", "dimension": "Polarization",
@@ -106,7 +106,7 @@ class instruments(instruments_base):
     def live(self):
         return self.cam.get_frame(exp_time=self.exp_time)
 
-    def wav_step(self):
+    def wav_step(self, xs):
         time.sleep(self.wavwait)
 
     def widgets(self):

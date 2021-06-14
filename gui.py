@@ -139,7 +139,7 @@ class gui(param.Parameterized):
             self.mask[dim] = xs[dim_num]
             function = self.instruments.coords[dim]["function"]
             if not function == "none":
-                function()
+                function(xs)
             if not dim_num == len(xs) - 1:  # reset for all but the last dimension
                 self.bars[dim_num + 1].reset()
             else:
@@ -163,7 +163,7 @@ class gui(param.Parameterized):
         return self.instruments.loop_coords[dim], dim
 
     def live_view(self):
-        if (self.live):
+        if self.live:
             print("Updating live view")
             self.cache = self.instruments.live()
             self.cPol = self.cPol + 1
